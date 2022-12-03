@@ -102,6 +102,8 @@ add_library (
       connector.cpp location.cpp skyline.cpp
       scorediff.cpp
       unrollrepeats.cpp
+
+      AbletonConnector.h AbletonConnector.cpp
       )
 
 if (AVSOMR)

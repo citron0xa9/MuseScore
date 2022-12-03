@@ -58,6 +58,11 @@ bool Score::read(XmlReader& e)
             const QStringRef& tag(e.name());
             if (tag == "Staff")
                   readStaff(e);
+            else if (tag == "nextNoteId") {
+                masterScore()->setNextNoteId(e.readElementText().toULongLong());
+            } else if (tag == AbletonConnector::XML_TAG) {
+                masterScore()->abletonConnector().read(e);
+            }
             else if (tag == "Omr") {
 #ifdef OMR
                   masterScore()->setOmr(new Omr(this));

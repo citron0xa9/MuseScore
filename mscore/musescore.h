@@ -196,7 +196,7 @@ class MuseScoreApplication : public QtSingleApplication {
 //---------------------------------------------------------
 
 class MuseScore : public QMainWindow, public MuseScoreCore {
-      Q_OBJECT
+    Q_OBJECT
 
       QSettings settings;
       ScoreView* cv                        { 0 };
@@ -440,6 +440,7 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
 
       void loadScoreList();
       void editInstrList();
+      void showAbletonDialog();
       void symbolMenu();
       void showKeyEditor();
       bool saveFile(MasterScore* score);
@@ -601,6 +602,8 @@ class MuseScore : public QMainWindow, public MuseScoreCore {
       void restartAudioEngine();
 
    public:
+       static const char* ABLETON_ACTION;
+
       MuseScore();
       ~MuseScore();
       bool checkDirty(MasterScore*);

@@ -2184,7 +2184,7 @@ void Score::createPlayEvents(Chord* chord)
                   }
             }
       // gateTime is 100% for slured notes
-      if (!slur) {
+            if (!slur) {
             Instrument* instr = chord->part()->instrument(tick);
             instr->updateGateTime(&gateTime, 0, "");
             }
@@ -2251,6 +2251,51 @@ void Score::createPlayEvents(Measure const * start, Measure const * const end)
                         }
                   }
             }
+      }
+
+void Score::createPlayEvents(Part* part, Measure const* start, Measure const* const end)
+      {
+          if (!start)
+              start = firstMeasure();
+
+          int strack = part->startTrack();
+          int etrack = part->endTrack();
+          for (int track = strack; track < etrack; ++track) {
+              bool rangeEnded = false;
+              for (Measure const* m = start; m; m = m->nextMeasure()) {
+                  constexpr SegmentType st = SegmentType::ChordRest;
+
+                  if (m == end)
+                      rangeEnded = true;
+                  if (rangeEnded) {
+                      // The range has ended, but we should collect events
+                      // for tied notes. So we'll check if this is the case.
+                      const Segment* seg = m->first(st);
+                      const Element* e = seg->element(track);
+                      bool tie = false;
+                      if (e && e->isChord()) {
+                          for (const Note* n : toChord(e)->notes()) {
+                              if (n->tieBack()) {
+                                  tie = true;
+                                  break;
+                              }
+                          }
+                      }
+                      if (!tie)
+                          break;
+                  }
+
+                  // skip linked staves, except primary
+                  if (!m->score()->staff(track / VOICES)->primaryStaff())
+                      continue;
+                  for (Segment* seg = m->first(st); seg; seg = seg->next(st)) {
+                      Element* e = seg->element(track);
+                      if (e == 0 || !e->isChord())
+                          continue;
+                      createPlayEvents(toChord(e));
+                  }
+              }
+          }
       }
 
 //---------------------------------------------------------
@@ -2407,6 +2452,93 @@ void MidiRenderer::renderChunk(const Chunk& chunk, EventMap* events, const Conte
                   i++;
                   }
             }
+      }
+
+void MidiRenderer::renderPartChunk(const Chunk& chunk,
+          Part* part,
+          EventMap* events,
+          const Context& ctx)
+      {
+          assert(part->score() == score);
+          // TODO: avoid doing it multiple times for the same measures
+          score->createPlayEvents(part, chunk.startMeasure(), chunk.endMeasure());
+
+          score->updateChannel();
+          score->updateVelo();
+
+          SynthesizerState s = score->synthesizerState();
+          int method = s.method();
+          int cc = s.ccToUse();
+
+          // check if the score synth settings are actually set
+          // if not, use the global synth state
+          if (method == -1) {
+              method = ctx.synthState.method();
+              cc = ctx.synthState.ccToUse();
+
+              if (method == -1) {
+                  // fall back to defaults - this may be needed to pass tests,
+                  // since sometimes the synth state is not init
+                  method = 1;
+                  cc = 2;
+                  qWarning("Had to fall back to defaults to render measure");
+              }
+          }
+
+          DynamicsRenderMethod renderMethod = DynamicsRenderMethod::SIMPLE;
+          switch (method) {
+              case 0:
+                  renderMethod = DynamicsRenderMethod::SIMPLE;
+                  break;
+              case 1:
+                  renderMethod = DynamicsRenderMethod::SEG_START;
+                  break;
+              case 2:
+                  renderMethod = DynamicsRenderMethod::FIXED_MAX;
+                  break;
+              default:
+                  qWarning("Unrecognized dynamics method: %d", method);
+                  break;
+          }
+
+          // create note & other events
+          for (Staff* st : *part->staves()) {
+              StaffContext sctx;
+              sctx.staff = st;
+              sctx.method = renderMethod;
+              sctx.cc = cc;
+              sctx.renderHarmony = ctx.renderHarmony;
+              renderStaffChunk(chunk, events, sctx);
+          }
+          events->fixupMIDI();
+
+          // create sustain pedal events
+          renderSpanners(chunk, events);
+
+          if (ctx.metronome)
+              renderMetronome(chunk, events);
+
+          // NOTE:JT this is a temporary fix for duplicate events until polyphonic aftertouch support
+          // can be implemented. This removes duplicate SND events.
+          int lastChannel = -1;
+          int lastController = -1;
+          int lastValue = -1;
+          for (auto i = events->begin(); i != events->end();) {
+              if (i->second.type() == ME_CONTROLLER) {
+                  auto& event = i->second;
+                  if (event.channel() == lastChannel && event.controller() == lastController &&
+                      event.value() == lastValue) {
+                      i = events->erase(i);
+                  } else {
+                      lastChannel = event.channel();
+                      lastController = event.controller();
+                      lastValue = event.value();
+                      i++;
+                  }
+              } else {
+                  i++;
+              }
+          }
       }
 
 //---------------------------------------------------------

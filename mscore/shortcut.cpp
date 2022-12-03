@@ -14,6 +14,7 @@
 #include "shortcut.h"
 #include "icons.h"
 #include "libmscore/xml.h"
+#include "musescore.h"
 
 
 namespace Ms {
@@ -251,6 +252,13 @@ Shortcut Shortcut::_sc[] = {
          "instruments",
          QT_TRANSLATE_NOOP("action","Instruments…"),
          QT_TRANSLATE_NOOP("action","Show instruments dialog")
+         },
+      {
+         MsWidget::MAIN_WINDOW,
+         STATE_NORMAL | STATE_NOTE_ENTRY,
+         MuseScore::ABLETON_ACTION,
+         QT_TRANSLATE_NOOP("action","Ableton…"),
+         QT_TRANSLATE_NOOP("action","Show ableton dialog")
          },
       {
          MsWidget::MAIN_WINDOW,

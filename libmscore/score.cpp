@@ -75,6 +75,7 @@
 #include "instrchange.h"
 #include "synthesizerstate.h"
 #include "image.h"
+#include "libmscore/arpeggio.h"
 
 namespace Ms {
 
@@ -246,7 +247,11 @@ void MeasureBaseList::change(MeasureBase* ob, MeasureBase* nb)
 //---------------------------------------------------------
 
 Score::Score()
-   : ScoreElement(this), _headersText(MAX_HEADERS, nullptr), _footersText(MAX_FOOTERS, nullptr), _selection(this), _selectionFilter(this)
+          : ScoreElement(this)
+          , _headersText(MAX_HEADERS, nullptr)
+          , _footersText(MAX_FOOTERS, nullptr)
+          , _selection(this)
+          , _selectionFilter(this)
       {
       Score::validScores.insert(this);
       _masterScore = 0;
@@ -1356,7 +1361,7 @@ void Score::addElement(Element* element)
                   break;
 
             case ElementType::SLUR:
-                  addLayoutFlags(LayoutFlag::PLAY_EVENTS);
+                addLayoutFlags(LayoutFlag::PLAY_EVENTS);
                   // fall through
 
             case ElementType::VOLTA:
@@ -1376,7 +1381,9 @@ void Score::addElement(Element* element)
                         if (ss->system())
                               ss->system()->add(ss);
                         }
+                  emit masterScore()->musicChanged(spanner->tick().ticks(), spanner->ticks().ticks(), spanner->staff());
                   }
+
                   break;
 
             case ElementType::OTTAVA:
@@ -1390,13 +1397,16 @@ void Score::addElement(Element* element)
                   cmdState().layoutFlags |= LayoutFlag::FIX_PITCH_VELO;
                   o->staff()->updateOttava();
                   setPlaylistDirty();
+                  emit masterScore()->musicChanged(o->tick().ticks(), o->ticks().ticks(), o->staff());
                   }
                   break;
 
-            case ElementType::DYNAMIC:
-                  cmdState().layoutFlags |= LayoutFlag::FIX_PITCH_VELO;
-                  setPlaylistDirty();
-                  break;
+            case ElementType::DYNAMIC: {
+                cmdState().layoutFlags |= LayoutFlag::FIX_PITCH_VELO;
+                setPlaylistDirty();
+                emit masterScore()->musicChanged(element->tick().ticks(), -1, element->staff());
+                break;
+            }
 
             case ElementType::TEMPO_TEXT:
                   fixTicks(); // rebuilds tempomap
@@ -1422,21 +1432,39 @@ void Score::addElement(Element* element)
                   }
                   break;
 
-            case ElementType::CHORD:
-                  setPlaylistDirty();
-                  // create playlist does not work here bc. tremolos may not be complete
-                  // createPlayEvents(toChord(element));
-                  break;
+            case ElementType::CHORD: {
+                Chord* chord = toChord(element);
+                setPlaylistDirty();
+                emit masterScore()->musicChanged(chord->tick().ticks(), chord->ticks().ticks(), chord->staff());
+                // create playlist does not work here bc. tremolos may not be complete
+                // createPlayEvents(toChord(element));
+                break;
+                  }
 
             case ElementType::NOTE:
-            case ElementType::TREMOLO:
             case ElementType::ARTICULATION:
-            case ElementType::ARPEGGIO:
-                  {
-                  if (parent && parent->isChord())
-                        createPlayEvents(toChord(parent));
-                  }
-                  break;
+            case ElementType::ARPEGGIO: {
+                if (parent && parent->isChord()) {
+                    Chord* chord = toChord(parent);
+                    createPlayEvents(chord);
+                    emit masterScore()->musicChanged(chord->tick().ticks(), chord->actualTicks().ticks(), chord->staff());
+                } else {
+                    emit masterScore()->musicChanged(element->tick().ticks(), -1, element->staff());
+                }
+                break;
+            }
+            case ElementType::TREMOLO: {
+                Tremolo* tremolo = toTremolo(element);
+                const auto duration = tremolo->durationType();
+                int durationTicks = -1;
+                if (duration.isValid()) {
+                    durationTicks = duration.fraction().ticks();
+                }
+                emit masterScore()->musicChanged(tremolo->tick().ticks(), durationTicks, tremolo->staff());
+                if (parent && parent->isChord())
+                    createPlayEvents(toChord(parent));
+                break;
+            }
             case ElementType::HARMONY:
                   element->part()->updateHarmonyChannels(true);
                   break;
@@ -1542,6 +1570,7 @@ void Score::removeElement(Element* element)
                         break;
                   spanner->triggerLayout();
                   removeSpanner(spanner);
+                  emit masterScore()->musicChanged(spanner->tick().ticks(), spanner->ticks().ticks(), element->staff());
                   }
                   break;
 
@@ -1553,12 +1582,14 @@ void Score::removeElement(Element* element)
                   o->staff()->updateOttava();
                   cmdState().layoutFlags |= LayoutFlag::FIX_PITCH_VELO;
                   setPlaylistDirty();
+                  emit masterScore()->musicChanged(o->tick().ticks(), o->ticks().ticks(), element->staff());
                   }
                   break;
 
             case ElementType::DYNAMIC:
                   cmdState().layoutFlags |= LayoutFlag::FIX_PITCH_VELO;
                   setPlaylistDirty();
+                  emit masterScore()->musicChanged(element->tick().ticks(), -1, element->staff());
                   break;
 
             case ElementType::CHORD:
@@ -1569,6 +1600,7 @@ void Score::removeElement(Element* element)
                         cr->beam()->remove(cr);
                   for (Lyrics* lyr : cr->lyrics())
                         lyr->removeFromScore();
+                  emit masterScore()->musicChanged(cr->tick().ticks(), cr->actualTicks().ticks(), element->staff());
                   // TODO: check for tuplet?
                   }
                   break;
@@ -1595,15 +1627,30 @@ void Score::removeElement(Element* element)
                   }
                   break;
 
-            case ElementType::TREMOLO:
             case ElementType::ARTICULATION:
-            case ElementType::ARPEGGIO:
-                  {
-                  Element* cr = element->parent();
-                  if (cr->isChord())
-                        createPlayEvents(toChord(cr));
-                  }
-                  break;
+            case ElementType::ARPEGGIO: {
+                Element* cr = element->parent();
+                if (cr->isChord()) {
+                    Chord* chord = toChord(cr);
+                    createPlayEvents(chord);
+                    emit masterScore()->musicChanged(chord->tick().ticks(), chord->actualTicks().ticks(), element->staff());
+                } else {
+                    emit masterScore()->musicChanged(element->tick().ticks(), -1, element->staff());
+                }
+                break;
+            }
+            case ElementType::TREMOLO: {
+                Tremolo* tremolo = toTremolo(element);
+                const auto duration = tremolo->durationType();
+                int durationTicks = -1;
+                if (duration.isValid()) {
+                    durationTicks = duration.fraction().ticks();
+                }
+                emit masterScore()->musicChanged(tremolo->tick().ticks(), durationTicks, element->staff());
+                if (parent && parent->isChord())
+                    createPlayEvents(toChord(parent));
+                break;
+            }
             case ElementType::HARMONY:
                   element->part()->updateHarmonyChannels(true, true);
                   break;
@@ -4904,6 +4951,8 @@ MasterScore::MasterScore()
       metaTags().insert("source", "");
       metaTags().insert("copyright", "");
       metaTags().insert("creationDate", QDate::currentDate().toString(Qt::ISODate));
+
+      mAbletonConnectorPtr = std::make_unique<AbletonConnector>(*this);
       }
 
 MasterScore::MasterScore(const MStyle& s)

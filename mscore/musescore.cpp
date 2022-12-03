@@ -180,6 +180,8 @@ extern Ms::Synthesizer* createZerberus();
 
 namespace Ms {
 
+const char* MuseScore::ABLETON_ACTION = "ableton";
+
 MuseScore* mscore;
 MasterSynthesizer* synti;
 
@@ -1047,7 +1049,7 @@ void MuseScore::populatePlaybackControls()
 //---------------------------------------------------------
 
 MuseScore::MuseScore()
-   : QMainWindow()
+    : QMainWindow()
       {
       _tourHandler = new TourHandler(this);
       qApp->installEventFilter(_tourHandler);
@@ -1429,6 +1431,7 @@ MuseScore::MuseScore()
       menuEdit->addSeparator();
 
       menuEdit->addAction(getAction("instruments"));
+      menuEdit->addAction(getAction(ABLETON_ACTION));
 
 #ifdef NDEBUG
       if (enableExperimental) {
@@ -6534,6 +6537,9 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             reportBug("panel");
       else if (cmd == "leave-feedback")
             leaveFeedback("panel");
+      else if (cmd == ABLETON_ACTION) {
+        showAbletonDialog();
+      }
 #ifndef NDEBUG
       else if (cmd == "no-horizontal-stretch") {
             MScore::noHorizontalStretch = a->isChecked();
@@ -6998,6 +7004,7 @@ QMenu* MuseScore::createPopupMenu()
             }
       return m;
       }
+
 
 //---------------------------------------------------------
 //   editInstrumentList
@@ -8500,4 +8507,5 @@ void MuseScore::scoreUnrolled(MasterScore * original)
       MasterScore * score = original->unrollRepeats();
       setCurrentScoreView(appendScore(score));
       }
+
 } // namespace Ms

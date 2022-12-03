@@ -28,6 +28,8 @@
 #include "layoutbreak.h"
 #include "property.h"
 #include "sym.h"
+#include "AbletonConnector.h"
+#include <cstdint>
 
 namespace Ms {
 
@@ -580,6 +582,7 @@ class Score : public QObject, public ScoreElement {
    signals:
       void posChanged(POS, unsigned);
       void playlistChanged();
+      void musicChanged(int, int, Staff*);
 
    public:
       Score();
@@ -949,6 +952,7 @@ class Score : public QObject, public ScoreElement {
 
       void updateSwing();
       void createPlayEvents(Measure const * start = nullptr, Measure const * const end = nullptr);
+      void createPlayEvents(Part* part, Measure const* start = nullptr, Measure const* const end = nullptr);
 
       void updateCapo();
       void updateVelo();
@@ -1267,7 +1271,9 @@ static inline const Score* toScore(const ScoreElement* e) {
 //---------------------------------------------------------
 
 class MasterScore : public Score {
-      Q_OBJECT
+          Q_OBJECT
+
+      std::unique_ptr<AbletonConnector> mAbletonConnectorPtr;
       TimeSigMap* _sigmap;
       TempoMap* _tempomap;
       RepeatList* _repeatList;
@@ -1302,6 +1308,8 @@ class MasterScore : public Score {
       QSet<int> occupiedMidiChannels;                 // each entry is port*16+channel, port range: 0-inf, channel: 0-15
       unsigned int searchMidiMappingFrom;             // makes getting next free MIDI mapping faster
 
+      std::uint64_t mNextNoteId = 1u;
+
       void parseVersion(const QString&);
       void reorderMidiMapping();
       void rebuildExcerptsMidiMapping();
@@ -1320,6 +1328,8 @@ class MasterScore : public Score {
       MasterScore(const MStyle&);
       virtual ~MasterScore();
       MasterScore* clone();
+
+      AbletonConnector& abletonConnector() { return *mAbletonConnectorPtr;  }
 
       virtual bool isMaster() const override                          { return true;        }
       virtual bool readOnly() const override                          { return _readOnly;   }
@@ -1441,6 +1451,10 @@ class MasterScore : public Score {
 
       virtual MStyle& style() override                   { return movements()->style();       }
       virtual const MStyle& style() const override       { return movements()->style();       }
+
+      std::uint64_t nextNoteId() const { return mNextNoteId; }
+      void setNextNoteId(std::uint64_t id) { mNextNoteId = id; }
+      std::uint64_t useNoteId() { return mNextNoteId++; }
       };
 
 //---------------------------------------------------------

@@ -293,6 +293,8 @@ class Note final : public Element {
 
       QString _fretString;
 
+      std::uint64_t mNoteId;
+
       void startDrag(EditData&) override;
       QRectF drag(EditData&ed) override;
       void endDrag(EditData&) override;
@@ -530,6 +532,8 @@ class Note final : public Element {
       void setOnTimeType(int v)  { _onTimeType = v; }
       int offTimeType() const    { return _offTimeType; }
       int onTimeType() const     { return _onTimeType; }
+
+      std::uint64_t noteId() const { return mNoteId; }
       };
 
 }     // namespace Ms

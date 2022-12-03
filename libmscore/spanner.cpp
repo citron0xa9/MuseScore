@@ -1053,11 +1053,13 @@ Element* Spanner::prevSegmentElement()
 //   setTick
 //---------------------------------------------------------
 
-void Spanner::setTick(const Fraction& v)
+      void Spanner::setTick(const Fraction& v)
       {
-      _tick = v;
-      if (score())
-            score()->spannerMap().setDirty();
+          _tick = v;
+          if (score()) {
+              score()->spannerMap().setDirty();
+              emit score()->musicChanged(tick().ticks(), ticks().ticks(), staff());
+          }
       }
 
 //---------------------------------------------------------
@@ -1073,11 +1075,13 @@ void Spanner::setTick2(const Fraction& f)
 //   setTicks
 //---------------------------------------------------------
 
-void Spanner::setTicks(const Fraction& f)
+      void Spanner::setTicks(const Fraction& f)
       {
-      _ticks = f;
-      if (score())
-            score()->spannerMap().setDirty();
+          _ticks = f;
+          if (score()) {
+              score()->spannerMap().setDirty();
+              emit score()->musicChanged(tick().ticks(), ticks().ticks(), staff());
+          }
       }
 
 //---------------------------------------------------------

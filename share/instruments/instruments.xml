@@ -265,7 +265,7 @@
                   </Channel>
                   <Articulation>
                         <velocity>100</velocity>
-                        <gateTime>95</gateTime>
+                        <gateTime>100</gateTime>
                   </Articulation>
                   <genre>common</genre>
                   <genre>jazz</genre>
@@ -442,7 +442,7 @@
                   </Channel>
                   <Articulation>
                         <velocity>100</velocity>
-                        <gateTime>95</gateTime>
+                        <gateTime>100</gateTime>
                   </Articulation>
                   <genre>earlymusic</genre>
             </Instrument>
@@ -8448,7 +8448,7 @@
                   </Channel>
                   <Articulation>
                         <velocity>100</velocity>
-                        <gateTime>95</gateTime>
+                        <gateTime>100</gateTime>
                   </Articulation>
                   <genre>common</genre>
                   <genre>jazz</genre>
@@ -8477,7 +8477,7 @@
                   </Channel>
                   <Articulation>
                         <velocity>100</velocity>
-                        <gateTime>95</gateTime>
+                        <gateTime>100</gateTime>
                   </Articulation>
                   <genre>orchestra</genre>
                   <genre>concertband</genre>
@@ -8502,7 +8502,7 @@
                   </Channel>
                   <Articulation>
                         <velocity>100</velocity>
-                        <gateTime>95</gateTime>
+                        <gateTime>100</gateTime>
                   </Articulation>
             </Instrument>
             <Instrument id="honky-tonk-piano">
@@ -8525,7 +8525,7 @@
                   </Channel>
                   <Articulation>
                         <velocity>100</velocity>
-                        <gateTime>95</gateTime>
+                        <gateTime>100</gateTime>
                   </Articulation>
                   <genre>jazz</genre>
                   <genre>popular</genre>
@@ -8550,7 +8550,7 @@
                   </Channel>
                   <Articulation>
                         <velocity>100</velocity>
-                        <gateTime>95</gateTime>
+                        <gateTime>100</gateTime>
                   </Articulation>
                   <genre>classroom</genre>
             </Instrument>

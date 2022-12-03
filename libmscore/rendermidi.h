@@ -126,6 +126,7 @@ class MidiRenderer {
 
       void renderScore(EventMap* events, const Context& ctx);
       void renderChunk(const Chunk&, EventMap* events, const Context& ctx);
+      void renderPartChunk(const Chunk&, Part* part, EventMap* events, const Context& ctx);
 
       void setScoreChanged() { needUpdate = true; }
       void setMinChunkSize(int sizeMeasures) { minChunkSize = sizeMeasures; needUpdate = true; }

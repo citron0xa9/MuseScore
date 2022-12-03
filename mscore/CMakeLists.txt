@@ -93,6 +93,7 @@ QT5_WRAP_UI (ui_headers
       palette/createPalette.ui
       scorecmp/scorecmp_tool.ui
       script/script_recorder.ui
+      abletonDialog.ui
       )
 
 if (APPLE)
@@ -289,6 +290,7 @@ add_library(mscoreapp STATIC
       gridcanvas.h tremolobarcanvas.h bendcanvas.h fretcanvas.h keycanvas.h harmonycanvas.h
 
       sparkle/autoUpdater.h sparkle/sparkleAutoUpdater.h sparkle/winSparkleAutoUpdater.h
+      abletonDialog.h abletonDialog.cpp
       )
 
 if (MSVC OR MINGW)

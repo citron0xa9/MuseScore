@@ -593,6 +593,7 @@ NoteHead::Group NoteHead::headGroup() const
 Note::Note(Score* s)
    : Element(s, ElementFlag::MOVABLE)
       {
+      mNoteId = s->masterScore()->useNoteId();
       _playEvents.append(NoteEvent());    // add default play event
       _cachedNoteheadSym = SymId::noSym;
       _cachedSymNull = SymId::noSym;
@@ -609,6 +610,7 @@ Note::~Note()
 Note::Note(const Note& n, bool link)
    : Element(n)
       {
+      mNoteId = n.masterScore()->useNoteId();
       if (link)
             score()->undo(new Link(this, const_cast<Note*>(&n)));
       _subchannel        = n._subchannel;
@@ -690,6 +692,7 @@ void Note::setPitch(int val)
       if (_pitch != val) {
             _pitch = val;
             score()->setPlaylistDirty();
+            emit masterScore()->musicChanged(tick().ticks(), playTicks(), staff());
             }
       }
 
@@ -1324,6 +1327,7 @@ void Note::write(XmlWriter& xml) const
       for (Spanner* e : _spannerBack)
             e->writeSpannerEnd(xml, this, track());
 
+      xml.tag("noteId", mNoteId);
       xml.etag();
       }
 
@@ -1515,6 +1519,9 @@ bool Note::readProperties(XmlReader& e)
             }
       else if (tag == "offset")
             Element::readProperties(e);
+      else if (tag == "noteId") {
+            mNoteId = e.readElementText().toULongLong();
+      }
       else if (Element::readProperties(e))
             ;
       else

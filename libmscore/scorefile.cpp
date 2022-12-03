@@ -131,6 +131,10 @@ void Score::writeMovement(XmlWriter& xml, bool selectionOnly)
       if (masterScore()->omr() && xml.writeOmr())
             masterScore()->omr()->write(xml);
 #endif
+      if (isMaster()) {
+          xml.tag("nextNoteId", masterScore()->nextNoteId());
+          masterScore()->abletonConnector().write(xml);
+      }
       if (isMaster() && masterScore()->showOmr() && xml.writeOmr())
             xml.tag("showOmr", masterScore()->showOmr());
       if (_audio && xml.writeOmr()) {
